@@ -1,6 +1,7 @@
 import { Button, Container, Overlay, Text, Title } from '@mantine/core';
 import classes from '../styles/HeroContentLeft.module.css';
 
+
 export default function Home() {
   return (
     <div className={classes.hero}>
@@ -16,7 +17,7 @@ export default function Home() {
           Access courses,track your progress, and achieve your goals all in one place."</b>
         </Text>
         <Button variant="gradient" size="xl" radius="xl" className={classes.control}>
-          Get started
+          <a href= "/student/login">Get started</a>
         </Button>
       </Container>
     </div>
