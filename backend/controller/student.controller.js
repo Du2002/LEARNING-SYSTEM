@@ -4,12 +4,12 @@ const bcrypt = require("bcrypt")
 //login 
 async function Login(req,res){
     try {
-        const {username,password}=req.body
+        const {email,password}=req.body
 
-        const user = await studentModel.findOne({username: username})
-    } catch (error) {
+        const user = await studentModel.findOne({email: email})
+    
         if(!user){
-            return res.status(404).json({msg:"username not found"})
+            return res.status(404).json({msg:"User not found"})
         }else{
             const valid = await bcrypt.compare(password,user.password)
             if (valid){
@@ -17,15 +17,36 @@ async function Login(req,res){
                 return res.json ({msg:"Login Succes"})
             }else{
                 return res.status(401).json({msg:"Authentication failed"})
-            }
-           return res.status(500).json({msg:"Server Error"}) 
+            } 
         }
+        } catch (error) {
         
-    }
-
-    
+            return res.status(500).json({msg:"Error Occured"})
+        }  
 }
+
+//Register
+async function Register(req,res){
+    try {
+        const {username,fullname,email,password}=req.body
+        const hashPassword = await bcrypt.hash(password,10)
+
+        const user = await studentModel.create(
+            {
+                username,
+                fullname,
+                email,
+                password:hashPassword,
+            })
+        res.json({msg:"User created"})
+    
+        } catch (error) {
+        
+            return res.status(500).json({msg:"Error Occured"})
+        }  
+    }
 
 module.exports = {
     Login,
+    Register,
 }

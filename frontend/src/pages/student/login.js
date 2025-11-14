@@ -19,7 +19,7 @@ export default function Login() {
           Welcome back to LMS!
         </Title>
 
-        <TextInput label="Email address" placeholder="hello@gmail.com" size="md" radius="md" />
+        <TextInput label="Email" placeholder="hello@gmail.com" size="md" radius="md" />
         <PasswordInput label="Password" placeholder="Your password" mt="md" size="md" radius="md"  />
         <Checkbox label="Keep me logged in" mt="xl" size="md" />
 
