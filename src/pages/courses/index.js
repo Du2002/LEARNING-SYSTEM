@@ -26,7 +26,7 @@ export default function Courses() {
                         resources. Find the course that matches your goals and take the first step 
                         toward mastering something new.
                       </p>
-                      <Anchor href='/[coursename]'>
+                      <Anchor href='/courses/course'>
                       <Button mt="sm" size="md" radius="md" mb="xl">Go to Courses</Button>   
                       </Anchor>      
                     </div>

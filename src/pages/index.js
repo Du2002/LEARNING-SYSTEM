@@ -1,4 +1,4 @@
-import { Button, Container, Overlay, Text, Title } from '@mantine/core';
+import { Button, Container, Overlay, Text, Title,Anchor } from '@mantine/core';
 import classes from '../styles/HeroContentLeft.module.css';
 
 
@@ -16,9 +16,12 @@ export default function Home() {
           "Unlock your potential with our comprehensive learning platform.
           Access courses,track your progress, and achieve your goals all in one place."</b>
         </Text>
+         {/* <Anchor href="/student/login"> */}
         <Button variant="gradient" size="xl" radius="xl" className={classes.control}>
-          <a href= "/student/login">Get started</a>
+            
+          <a href= "/student/login">Get started</a> 
         </Button>
+        {/* </Anchor> */}
       </Container>
     </div>
   );
