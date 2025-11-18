@@ -4,29 +4,49 @@ import {
 	Group,
 	Text,
 	Title,
-	Button,
-	List,
-	ThemeIcon,
 	Divider,
 	Box,
 } from "@mantine/core";
-import { IconBook } from "@tabler/icons-react";
-import Link from "next/link";
+
+import { useEffect, useState } from "react";
+import { studentProfile } from "../../../util/api/student.api";
+import useAuth from "../../../util/api/context/AuthContext";
 
 const studentData = {
-	fullName: "John Doe",
+	fullname: "John Doe",
 	username: "johndoe123",
-	dob: "2000-01-01",
-	courses: [
-		{ name: "Mathematics", url: "mathematics" },
-		{ name: "Physics", url: "physics" },
-		{ name: "Chemistry", url: "chemistry" },
-	],
+	email:"john@email.com",
 };
 
 export default function Profile() {
+	const [profileDta,setProfileDta] = useState({ 
+		fullname: "",
+	    username: "",
+		email:"",
+		 
+	})
+
+	const {user} = useAuth()
+	 
+
+
+	useEffect(()=>{
+		async function getData() {
+			const res = await studentProfile(user.token)
+			if(res){ 
+			  res.rest && setProfileDta(res.rest)
+			}
+		}
+		getData()
+	},  [ ])
+
+
 	return (
-		<Box maw={500} mx="auto" my={40}>
+	    <div 
+		style={
+			{ background: "linear-gradient(135deg, #f7e7c8ff 0%, #f4ddc1ff 100%)", minHeight: "100vh",width: "100vw", padding: "20px" }
+			}>
+		 <Box maw={500} mx="auto" my={40}>
 			<Card shadow="md" padding="xl" radius="md" withBorder>
 				<Title order={2} mb="md" align="center">
 					Student Profile
@@ -35,56 +55,26 @@ export default function Profile() {
 				<Group direction="column" spacing={8} mb="lg">
 					<Text>
 						<Text span fw={500}>
-							Full Name:
+							Fullname:
 						</Text>{" "}
-						{studentData.fullName}
+						{profileDta.fullname || ""}
 					</Text>
 					<Text>
 						<Text span fw={500}>
 							Username:
 						</Text>{" "}
-						{studentData.username}
+						{profileDta.username || ""}
 					</Text>
 					<Text>
 						<Text span fw={500}>
-							Date of Birth:
+							Email:
 						</Text>{" "}
-						{studentData.dob}
+						{profileDta.email || ""}
 					</Text>
 				</Group>
-				<Divider mb="md" />
-				<Title order={4} mb="sm">
-					My Courses
-				</Title>
-				<List
-					spacing="sm"
-					size="md"
-					icon={
-						<ThemeIcon color="blue" size={24} radius="xl">
-							<IconBook size={16} />
-						</ThemeIcon>
-					}>
-					{studentData.courses.map((course) => (
-						<List.Item key={course.url}>
-							<Group position="apart" noWrap>
-								<Text>{course.name}</Text>
-								<Link
-									href={`/courses/r/${course.url}`}
-									passHref
-									legacyBehavior>
-									<Button
-										component="a"
-										size="xs"
-										variant="light"
-										color="blue">
-										Go to Course
-									</Button>
-								</Link>
-							</Group>
-						</List.Item>
-					))}
-				</List>
+				 
 			</Card>
 		</Box>
+	</div>
 	);
 }

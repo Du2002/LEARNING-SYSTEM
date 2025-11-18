@@ -49,6 +49,10 @@ const courses = [
 
 export default function CoursesPage() {
 	return (
+		<div 
+		style={
+			{ background: "linear-gradient(135deg, #f7e7c8ff 0%, #f4ddc1ff 100%)", minHeight: "100vh",width: "100vw", padding: "20px" }
+			}>
 		<SimpleGrid
 			cols={3}
 			p={16}
@@ -83,5 +87,6 @@ export default function CoursesPage() {
 				</Card>
 			))}
 		</SimpleGrid>
+	</div>
 	);
 }

@@ -7,7 +7,6 @@ import Link from "next/link";
 const links = [
   { link: '/student/login', label: 'Login' },
   { link: '/student/signup', label: 'Signup' },
-  { link: '/courses', label: 'Courses' },
   { link: '/about', label: 'About' },
 ];
 

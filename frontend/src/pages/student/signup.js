@@ -1,7 +1,12 @@
 import React, { useState } from "react";
 import {Anchor,Button} from '@mantine/core';
+import { useRouter } from 'next/router';
+import { studentRegister } from "../../../util/api/student.api";
 
 export default function Signup() {
+
+  
+  const router = useRouter()
   const [form, setForm] = useState({
     username: "",
     fullname: "",
@@ -14,11 +19,16 @@ export default function Signup() {
     setForm((s) => ({ ...s, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+   
+
+   async function handleSubmit(e) {
     e.preventDefault();
-    // Replace with real signup logic / API call
+    const res = await studentRegister(form.fullname, form.username, form.email, form.password)
     console.log("Signup data:", form);
-    alert("Signed up (demo) — check console for data");
+    console.log(res);
+    router.push("/student/login")
+    alert("Signed up successfully!");
+    
   };
 
   return (
@@ -32,7 +42,7 @@ export default function Signup() {
             <input
               name="username" 
               value={form.username}
-              onChange={handleChange}
+              onChange={handleChange} 
               required
               autoComplete="username"
               placeholder="johndoe"
@@ -75,12 +85,11 @@ export default function Signup() {
               placeholder="••••••••"
             />
           </label>
-
-          <Anchor href="/courses" sx={{ display: 'block' }}>
-                    <Button fullWidth mt="xl" size="md" radius="md">
+ 
+                    <Button fullWidth mt="xl" size="md" radius="md" type="submit">
                       Signup
                     </Button>
-           </Anchor>
+           
 
            
         </form>

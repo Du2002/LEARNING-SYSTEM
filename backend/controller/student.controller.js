@@ -1,5 +1,6 @@
 const studentModel = require("../models/student.model")
 const bcrypt = require("bcrypt")
+const jwt = require("jsonwebtoken")
 
 //login 
 async function Login(req,res){
@@ -13,8 +14,11 @@ async function Login(req,res){
         }else{
             const valid = await bcrypt.compare(password,user.password)
             if (valid){
-                //TODO: PUT TOKEN
-                return res.json ({msg:"Login Succes"})
+                //jwt create
+                const token = jwt.sign({_id:user._id,role:"student"},
+                    "12345"
+                )
+                return res.json ({token})
             }else{
                 return res.status(401).json({msg:"Authentication failed"})
             } 
@@ -46,7 +50,27 @@ async function Register(req,res){
         }  
     }
 
+//profile
+async function Profile(req,res){
+    try {
+        const ID = req.user
+        const user = await studentModel.findById(ID)
+    
+        if(!user){
+            return res.status(404).json({msg:"User not found"})
+        }else{
+            const {password,...rest} = user._doc
+            res.json({rest})
+        }
+    
+        } catch (error) {
+        
+            return res.status(500).json({msg:"Error Occured"})
+        }  
+    }
+
 module.exports = {
     Login,
     Register,
+    Profile,
 }

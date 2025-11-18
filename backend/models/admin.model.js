@@ -1,4 +1,5 @@
 const mongoose = require("mongoose") 
+const { Schema } = mongoose;
  
 
 const adminSchema = new Schema({
@@ -10,9 +11,9 @@ const adminSchema = new Schema({
       trim:true
     },
      
-    password:{
+    email:{
         type:String,
-         required:true,
+        required:true,
     },
 },
     {

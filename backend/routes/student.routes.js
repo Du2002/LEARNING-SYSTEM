@@ -1,12 +1,13 @@
 const {Router} = require("express")
-const { Login, Register } = require("../controller/student.controller")
+const { Login, Register,Profile } = require("../controller/student.controller")
+const { authenticateStudent } = require("../middleware/student.middleware")
  
 
 const studentRouter = Router()
  
-studentRouter.get("/login",Login)
-studentRouter.get("/register",Register)
-
+studentRouter.post("/login",Login)
+studentRouter.post("/register",Register)
+studentRouter.get("/profile",authenticateStudent,Profile)
  
 
 module.exports = studentRouter

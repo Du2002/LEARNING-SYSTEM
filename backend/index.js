@@ -1,17 +1,21 @@
 require("dotenv").config()
 require("./database/connect")
 const express = require("express")
+const cors = require("cors")
 
 const testRouter = require("./routes/test.routes") 
 const studentRouter = require("./routes/student.routes")
+const adminRouter = require("./routes/admin.routes")
 
  
 
 const app = express()
 app.use(express.json())
+app.use(cors({origin:"*"}))
 
 app.use("/test",testRouter)
 app.use("/student", studentRouter)
+app.use("/admin", adminRouter)
 
 
 

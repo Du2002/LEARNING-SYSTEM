@@ -16,6 +16,7 @@ import {
 	Badge,
 	ScrollArea,
 } from "@mantine/core";
+import { adminRegister, deleteAdmin } from "../../../util/api/admin.api";
 
 // Sample Data
 const initialCourses = [
@@ -155,13 +156,47 @@ function CourseForm({ initial, onSubmit, onCancel }) {
 
 // Admin Form Component
 function AdminForm({ onSubmit, onCancel }) {
-	const [name, setName] = useState("");
+	const [username, setUserame] = useState("");
 	const [email, setEmail] = useState("");
 
-	const handleSubmit = (e) => {
+	async function handleSubmit(e) {
 		e.preventDefault();
-		if (!name || !email) return;
-		onSubmit({ name, email });
+
+		try {
+			if (!username || !email) return;
+			const res = await adminRegister(username, password); // Assuming adminRegister handles registration
+			if (res.success) {
+				setAdmins([...admins, { name: username, email }]);
+			} else {
+				console.error("Failed to register admin:", res.message);
+			}
+			// Check if admin already exists in backend before creating
+			// Adjust the endpoint to match your server route that checks for existing admin by email
+			const resp = await fetch(
+				`/api/admin.routes/check?email=${encodeURIComponent(email)}`,
+				{ method: "POST" }
+			);
+
+			if (resp.ok) {
+				const { exists } = await resp.json();
+				if (exists) {
+					console.warn("Admin already exists:", email);
+					// Optionally show a UI message here instead of console
+					return;
+				}
+			} else {
+				// If check fails, log and continue — backend may still handle duplicates
+				console.warn("Admin existence check failed, proceeding to register");
+			}
+		} catch (err) {
+			console.error("Error checking admin existence:", err);
+			// decide whether to proceed or abort; here we abort to be safe
+			return;
+		}
+		if (!username || !email) return;
+		const res = await adminRegister(username,email );
+		console.log(res);
+		onSubmit({ username, email });
 	};
 
 	return (
@@ -169,8 +204,8 @@ function AdminForm({ onSubmit, onCancel }) {
 			<Stack>
 				<TextInput
 					label="Name"
-					value={name}
-					onChange={(e) => setName(e.target.value)}
+					value={username}
+					onChange={(e) => setUserame(e.target.value)}
 					required
 				/>
 				<TextInput
@@ -203,6 +238,22 @@ export default function AdminDashboard() {
 	// Students
 	const [students] = useState(initialStudents);
 
+	// Fetch admins from database on component mount
+	React.useEffect(() => {
+		const fetchAdmins = async () => {
+			try {
+				const response = await fetch("/api/admin.routes/all");
+				if (response.ok) {
+					const data = await response.json();
+					setAdmins(data);
+				}
+			} catch (err) {
+				console.error("Error fetching admins:", err);
+			}
+		};
+		fetchAdmins();
+	}, []);
+
 	// Course Handlers
 	const handleAddCourse = (course) => {
 		setCourses([...courses, course]);
@@ -227,8 +278,12 @@ export default function AdminDashboard() {
 		setAdminModal(false);
 	};
 
-	const handleDeleteAdmin = (idx) => {
-		setAdmins(admins.filter((_, i) => i !== idx));
+	const handleDeleteAdmin = async (idx) => {
+		const adminToDelete = admins[idx];
+		const res = await deleteAdmin(adminToDelete.email); // Assuming deleteAdmin is the API call
+		if (res.success) {
+			setAdmins(admins.filter((_, i) => i !== idx));
+		}
 	};
 
 	return (
