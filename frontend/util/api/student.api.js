@@ -33,5 +33,18 @@ export async function studentProfile(token) {
     }
 }
 
+// NEW: Update student profile function
+export async function updateStudentProfile(token, profileData) {
+    try {
+        const res = await BASE_URL.put("/student/profile", profileData, {
+            headers: {
+                Authorization: "Bearer " + token
+            }
+        });
+        return res.data;
+    } catch (error) {
+        return ({ error: "Error updating profile" });
+    }
+}
  
 

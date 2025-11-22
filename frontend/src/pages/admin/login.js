@@ -1,13 +1,8 @@
- 
 import {
-	Anchor,
 	Button,
-	Checkbox,
 	Container,
-	Group,
 	Paper,
 	PasswordInput,
-	Text,
 	TextInput,
 	Title,
 } from "@mantine/core";
@@ -15,52 +10,71 @@ import classes from "@/styles/common.module.css";
 import { useState } from 'react';
 import { adminLogin } from '../../../util/api/admin.api';
 import { useRouter } from 'next/router';
+import useAuth from '../../../util/api/context/AuthContext';
 
 export default function AdminLogin() {
-	
-	  const [username,setUsername]= useState("")
-	  const [password,setPassword]= useState("")
-	
-	  const [isLoading, setIsLoading] = useState(false);
+	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
+	const [isLoading, setIsLoading] = useState(false);
 
-	  const router = useRouter()
+	const router = useRouter();
+	const { setUser } = useAuth();
 
-	  async function Submit() {
-		if (!username || !password) {
-		  alert("Please enter both username and password");
-		  return;
+	async function Submit() {
+		if (!email || !password) {
+			alert("Please enter both email and password");
+			return;
 		}
 		setIsLoading(true);
 		try {
-		    const res = await adminLogin(username, password);
+			const res = await adminLogin(email, password);
 			console.log(res);
-			router.push("/admin/dashboard");
-		} catch (err) {
-		  console.error("Login error:", err);
-		  alert("An error occurred during login");
-		} finally {
-		  setIsLoading(false);
-		}
-	  }
 
+			if (res && res.token) {
+				// Store token in localStorage
+				localStorage.setItem("token", res.token);
+				
+				// Set user in AuthContext
+				setUser({ email: email, token: res.token, role: "admin" });
+				
+				// Navigate to dashboard
+				router.push("/admin/dashboard");
+			} else {
+				alert("Invalid credentials or login failed");
+			}
+		} catch (err) {
+			console.error("Login error:", err);
+			alert("An error occurred during login");
+		} finally {
+			setIsLoading(false);
+		}
+	}
 
 	return (
 		<>
-			<div className="background" style={
-			{ background: "linear-gradient(135deg, #bedef0ff 0%, #c7cef0ff 100%)", minHeight: "100vh",width: "100vw", padding: "20px" }
-			}>
-				<Container size={420} >
+			<div 
+				className="background" 
+				style={{
+					background: "linear-gradient(135deg, #bedef0ff 0%, #c7cef0ff 100%)", 
+					minHeight: "100vh",
+					width: "100vw", 
+					padding: "20px"
+				}}
+			>
+				<Container size={420}>
 					<Title ta="center" className={classes.title}>
 						Admin Login
 					</Title>
 
 					<Paper withBorder shadow="sm" p={22} mt={30} radius="md">
 						<TextInput
-							label="Username"
+							label="Email"
 							placeholder="admin@yourdomain.com"
+							type="email"
 							required
 							radius="md"
-							onChange={(e)=>setUsername(e.target.value)} value={username}
+							onChange={(e) => setEmail(e.target.value)}
+							value={email}
 						/>
 						<PasswordInput
 							label="Password"
@@ -68,13 +82,19 @@ export default function AdminLogin() {
 							required
 							mt="md"
 							radius="md"
-							onChange={(e)=>setPassword(e.target.value)} value={password} 
+							onChange={(e) => setPassword(e.target.value)}
+							value={password}
 						/>
 
-					 
-							<Button fullWidth mt="xl" radius="md" onClick={Submit} loading = {isLoading}>
-								Sign in
-							</Button>
+						<Button 
+							fullWidth 
+							mt="xl" 
+							radius="md" 
+							onClick={Submit} 
+							loading={isLoading}
+						>
+							Sign in
+						</Button>
 					</Paper>
 				</Container>
 			</div>
@@ -86,7 +106,6 @@ export default function AdminLogin() {
 					align-items: center; 
 					background-color: #faedcd;
 				}
-				/* ensure no default body margin shows a gap on some browsers */
 				body {
 					margin: 0;
 				}

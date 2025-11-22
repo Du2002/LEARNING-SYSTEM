@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { IconPlus, IconEdit, IconTrash } from "@tabler/icons-react";
 import {
 	Container,
@@ -9,60 +9,33 @@ import {
 	Modal,
 	TextInput,
 	Textarea,
+	PasswordInput,
 	ActionIcon,
 	Stack,
 	Box,
 	Divider,
 	Badge,
 	ScrollArea,
+	Loader,
+	Center,
+	Alert,
 } from "@mantine/core";
-import { adminRegister, deleteAdmin } from "../../../util/api/admin.api";
-
-// Sample Data
-const initialCourses = [
-	{
-		title: "Introduction to Web Development",
-		subtitle: "Build a strong foundation in modern web technologies",
-		description: `This course is designed to introduce you to the fundamentals of web development. You will learn about HTML, CSS, JavaScript, and how these technologies work together to create interactive and responsive web applications. By the end of this course, you'll have the skills to build your own basic websites and understand the core concepts needed for further study in web development.`,
-		modules: [
-			{
-				title: "Intro",
-				description: `Welcome to the Introduction module of this course. In this section, we will lay the foundation for your learning journey. The purpose of this module is to provide you with a comprehensive overview of the subject matter, its significance, and how it fits into the broader context of your studies or professional development. Throughout this introduction, you will gain insights into the key concepts, objectives, and outcomes that you can expect by the end of the course.
-
-            The module begins by exploring the historical background and evolution of the topic, highlighting its relevance in today's world. We will discuss the core principles and theories that underpin the subject, ensuring that you have a solid understanding of the basics before moving on to more advanced material. Additionally, this section will introduce you to the main challenges and opportunities associated with the field, encouraging you to think critically about the issues at hand.
-
-            As you progress through the introduction, you will encounter real-world examples and case studies that illustrate the practical applications of the concepts being discussed. These examples are designed to help you connect theory to practice, making the material more relatable and easier to grasp. You will also find reflective questions and activities that encourage you to engage actively with the content, fostering a deeper level of understanding.
-
-            By the end of this module, you should feel confident in your ability to articulate the fundamental ideas and importance of the subject. You will be well-prepared to tackle the subsequent modules, which will delve deeper into specific topics and skills. Remember, the introduction is not just a starting point—it is a crucial step in building a strong foundation for your learning. Take your time to absorb the material, ask questions, and seek clarification whenever necessary. We are excited to have you on this journey and look forward to supporting you every step of the way.`,
-			},
-			{
-				title: "HTML Basics",
-				description: `Learn the structure of web pages using HTML. This module covers elements, tags, attributes, and how to build semantic layouts.`,
-			},
-			{
-				title: "CSS Fundamentals",
-				description: `Discover how to style web pages with CSS. You'll explore selectors, properties, the box model, and responsive design techniques.`,
-			},
-			{
-				title: "JavaScript Essentials",
-				description: `Get started with JavaScript to add interactivity to your websites. This module introduces variables, functions, events, and basic DOM manipulation.`,
-			},
-		],
-	},
-];
-
-const initialStudents = [
-	{ name: "Alice Johnson", email: "alice@example.com" },
-	{ name: "Bob Smith", email: "bob@example.com" },
-];
-
-const initialAdmins = [
-	{ name: "Admin One", email: "admin1@example.com" },
-	{ name: "Admin Two", email: "admin2@example.com" },
-];
+import { IconAlertCircle } from "@tabler/icons-react";
+import {
+	getAllCourses,
+	createCourse,
+	updateCourse,
+	deleteCourse,
+	getAllStudents,
+	getAllAdmins,
+	adminRegister,
+	deleteAdmin,
+} from "../../../util/api/admin.api";
+import useAuth from "../../../util/api/context/AuthContext";
+import { useRouter } from "next/router";
 
 // Course Form Component
-function CourseForm({ initial, onSubmit, onCancel }) {
+function CourseForm({ initial, onSubmit, onCancel, saving }) {
 	const [title, setTitle] = useState(initial?.title || "");
 	const [subtitle, setSubtitle] = useState(initial?.subtitle || "");
 	const [description, setDescription] = useState(initial?.description || "");
@@ -86,7 +59,7 @@ function CourseForm({ initial, onSubmit, onCancel }) {
 	const handleSubmit = (e) => {
 		e.preventDefault();
 		if (!title || !subtitle || !description) return;
-		onSubmit({ title, subtitle, description, modules });
+		onSubmit({ title, subtitle, description,modules });
 	};
 
 	return (
@@ -142,10 +115,10 @@ function CourseForm({ initial, onSubmit, onCancel }) {
 					))}
 				</Stack>
 				<Group position="right" mt="md">
-					<Button variant="default" onClick={onCancel}>
+					<Button variant="default" onClick={onCancel} disabled={saving}>
 						Cancel
 					</Button>
-					<Button type="submit">
+					<Button type="submit" loading={saving}>
 						{initial ? "Update" : "Add"} Course
 					</Button>
 				</Group>
@@ -155,70 +128,46 @@ function CourseForm({ initial, onSubmit, onCancel }) {
 }
 
 // Admin Form Component
-function AdminForm({ onSubmit, onCancel }) {
-	const [username, setUserame] = useState("");
+function AdminForm({ onSubmit, onCancel, saving }) {
+	const [username, setUsername] = useState("");
 	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
 
-	async function handleSubmit(e) {
+	const handleSubmit = (e) => {
 		e.preventDefault();
-
-		try {
-			if (!username || !email) return;
-			const res = await adminRegister(username, password); // Assuming adminRegister handles registration
-			if (res.success) {
-				setAdmins([...admins, { name: username, email }]);
-			} else {
-				console.error("Failed to register admin:", res.message);
-			}
-			// Check if admin already exists in backend before creating
-			// Adjust the endpoint to match your server route that checks for existing admin by email
-			const resp = await fetch(
-				`/api/admin.routes/check?email=${encodeURIComponent(email)}`,
-				{ method: "POST" }
-			);
-
-			if (resp.ok) {
-				const { exists } = await resp.json();
-				if (exists) {
-					console.warn("Admin already exists:", email);
-					// Optionally show a UI message here instead of console
-					return;
-				}
-			} else {
-				// If check fails, log and continue — backend may still handle duplicates
-				console.warn("Admin existence check failed, proceeding to register");
-			}
-		} catch (err) {
-			console.error("Error checking admin existence:", err);
-			// decide whether to proceed or abort; here we abort to be safe
-			return;
-		}
-		if (!username || !email) return;
-		const res = await adminRegister(username,email );
-		console.log(res);
-		onSubmit({ username, email });
+		if (!username || !email || !password) return;
+		onSubmit({ username, email, password });
 	};
 
 	return (
 		<form onSubmit={handleSubmit}>
 			<Stack>
 				<TextInput
-					label="Name"
+					label="Username"
 					value={username}
-					onChange={(e) => setUserame(e.target.value)}
+					onChange={(e) => setUsername(e.target.value)}
 					required
 				/>
 				<TextInput
 					label="Email"
+					type="email"
 					value={email}
 					onChange={(e) => setEmail(e.target.value)}
 					required
 				/>
+				<PasswordInput
+					label="Password"
+					value={password}
+					onChange={(e) => setPassword(e.target.value)}
+					required
+				/>
 				<Group position="right" mt="md">
-					<Button variant="default" onClick={onCancel}>
+					<Button variant="default" onClick={onCancel} disabled={saving}>
 						Cancel
 					</Button>
-					<Button type="submit">Add Admin</Button>
+					<Button type="submit" loading={saving}>
+						Add Admin
+					</Button>
 				</Group>
 			</Stack>
 		</form>
@@ -226,65 +175,198 @@ function AdminForm({ onSubmit, onCancel }) {
 }
 
 export default function AdminDashboard() {
-	// Courses
-	const [courses, setCourses] = useState(initialCourses);
+	const router = useRouter();
+	const { user } = useAuth();
+
+	// Loading states
+	const [loading, setLoading] = useState(true);
+	const [saving, setSaving] = useState(false);
+	const [error, setError] = useState("");
+
+	// Data states
+	const [courses, setCourses] = useState([]);
+	const [students, setStudents] = useState([]);
+	const [admins, setAdmins] = useState([]);
+
+	// Modal states
 	const [courseModal, setCourseModal] = useState(false);
+	const [adminModal, setAdminModal] = useState(false);
 	const [editCourseIdx, setEditCourseIdx] = useState(null);
 
-	// Admins
-	const [admins, setAdmins] = useState(initialAdmins);
-	const [adminModal, setAdminModal] = useState(false);
+	// Load all data on mount
+	useEffect(() => {
+		// Get token from localStorage if not in context
+		const token = user.token || localStorage.getItem("token");
+		
+		if (!token) {
+			router.push("/admin/login");
+			return;
+		}
 
-	// Students
-	const [students] = useState(initialStudents);
-
-	// Fetch admins from database on component mount
-	React.useEffect(() => {
-		const fetchAdmins = async () => {
-			try {
-				const response = await fetch("/api/admin.routes/all");
-				if (response.ok) {
-					const data = await response.json();
-					setAdmins(data);
-				}
-			} catch (err) {
-				console.error("Error fetching admins:", err);
-			}
-		};
-		fetchAdmins();
+		loadAllData(token);
 	}, []);
 
+	const loadAllData = async (token) => {
+		try {
+			setLoading(true);
+			setError("");
+
+			// Fetch all data in parallel
+			const [coursesRes, studentsRes, adminsRes] = await Promise.all([
+				getAllCourses(token),
+				getAllStudents(token),
+				getAllAdmins(token),
+			]);
+
+			if (coursesRes && !coursesRes.error) {
+				setCourses(coursesRes.courses || []);
+			}
+
+			if (studentsRes && !studentsRes.error) {
+				setStudents(studentsRes.students || []);
+			}
+
+			if (adminsRes && !adminsRes.error) {
+				setAdmins(adminsRes.admins || []);
+			}
+		} catch (error) {
+			console.error("Error loading data:", error);
+			setError("Failed to load dashboard data");
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const getToken = () => {
+		return user.token || localStorage.getItem("token");
+	};
+
 	// Course Handlers
-	const handleAddCourse = (course) => {
-		setCourses([...courses, course]);
-		setCourseModal(false);
+	const handleAddCourse = async (courseData) => {
+		try {
+			setSaving(true);
+			const token = getToken();
+			const res = await createCourse(token, courseData);
+
+			if (res && !res.error) {
+				setCourses([...courses, res.course]);
+				setCourseModal(false);
+				alert("Course created successfully!");
+			} else {
+				alert("Failed to create course");
+			}
+		} catch (error) {
+			console.error("Error creating course:", error);
+			alert("Error creating course");
+		} finally {
+			setSaving(false);
+		}
 	};
 
-	const handleEditCourse = (course) => {
-		setCourses(
-			courses.map((c, idx) => (idx === editCourseIdx ? course : c))
-		);
-		setEditCourseIdx(null);
-		setCourseModal(false);
+	const handleEditCourse = async (courseData) => {
+		try {
+			setSaving(true);
+			const token = getToken();
+			const courseId = courses[editCourseIdx]._id;
+			const res = await updateCourse(token, courseId, courseData);
+
+			if (res && !res.error) {
+				setCourses(
+					courses.map((c, idx) =>
+						idx === editCourseIdx ? res.course : c
+					)
+				);
+				setEditCourseIdx(null);
+				setCourseModal(false);
+				alert("Course updated successfully!");
+			} else {
+				alert("Failed to update course");
+			}
+		} catch (error) {
+			console.error("Error updating course:", error);
+			alert("Error updating course");
+		} finally {
+			setSaving(false);
+		}
 	};
 
-	const handleDeleteCourse = (idx) => {
-		setCourses(courses.filter((_, i) => i !== idx));
+	const handleDeleteCourse = async (idx) => {
+		if (!confirm("Are you sure you want to delete this course?")) return;
+
+		try {
+			const token = getToken();
+			const courseId = courses[idx]._id;
+			const res = await deleteCourse(token, courseId);
+
+			if (res && !res.error) {
+				setCourses(courses.filter((_, i) => i !== idx));
+				alert("Course deleted successfully!");
+			} else {
+				alert("Failed to delete course");
+			}
+		} catch (error) {
+			console.error("Error deleting course:", error);
+			alert("Error deleting course");
+		}
 	};
 
 	// Admin Handlers
-	const handleAddAdmin = (admin) => {
-		setAdmins([...admins, admin]);
-		setAdminModal(false);
+	const handleAddAdmin = async (adminData) => {
+		try {
+			setSaving(true);
+			const res = await adminRegister(
+				adminData.username,
+				adminData.email,
+				adminData.password
+			);
+
+			if (res && !res.error) {
+				// Reload admins list
+				const token = getToken();
+				const adminsRes = await getAllAdmins(token);
+				if (adminsRes && !adminsRes.error) {
+					setAdmins(adminsRes.admins || []);
+				}
+				setAdminModal(false);
+				alert("Admin created successfully!");
+			} else {
+				alert("Failed to create admin");
+			}
+		} catch (error) {
+			console.error("Error creating admin:", error);
+			alert("Error creating admin");
+		} finally {
+			setSaving(false);
+		}
 	};
 
 	const handleDeleteAdmin = async (idx) => {
-		const adminToDelete = admins[idx];
-		const res = await deleteAdmin(adminToDelete.email); // Assuming deleteAdmin is the API call
-		if (res.success) {
-			setAdmins(admins.filter((_, i) => i !== idx));
+		if (!confirm("Are you sure you want to delete this admin?")) return;
+
+		try {
+			const token = getToken();
+			const adminId = admins[idx]._id;
+			const res = await deleteAdmin(token, adminId);
+
+			if (res && !res.error) {
+				setAdmins(admins.filter((_, i) => i !== idx));
+				alert("Admin deleted successfully!");
+			} else {
+				alert("Failed to delete admin");
+			}
+		} catch (error) {
+			console.error("Error deleting admin:", error);
+			alert("Error deleting admin");
 		}
 	};
+
+	if (loading) {
+		return (
+			<Center style={{ minHeight: "100vh" }}>
+				<Loader size="lg" />
+			</Center>
+		);
+	}
 
 	return (
 		<Container size="xl" py="lg">
@@ -292,9 +374,20 @@ export default function AdminDashboard() {
 				Admin Dashboard
 			</Title>
 
+			{error && (
+				<Alert
+					icon={<IconAlertCircle size={16} />}
+					color="red"
+					mb="md"
+					withCloseButton
+					onClose={() => setError("")}>
+					{error}
+				</Alert>
+			)}
+
 			{/* Courses Section */}
 			<Group position="apart" mb="xs" mt="lg">
-				<Title order={4}>Courses</Title>
+				<Title order={4}>Courses ({courses.length})</Title>
 				<Button
 					leftIcon={<IconPlus />}
 					onClick={() => {
@@ -315,40 +408,48 @@ export default function AdminDashboard() {
 						</tr>
 					</thead>
 					<tbody>
-						{courses.map((course, idx) => (
-							<tr key={idx}>
-								<td>{course.title}</td>
-								<td>{course.subtitle}</td>
-								<td>
-									<Group spacing="xs">
-										{course.modules.map((mod, mIdx) => (
-											<Badge key={mIdx}>
-												{mod.title}
-											</Badge>
-										))}
-									</Group>
-								</td>
-								<td>
-									<Group spacing={4}>
-										<ActionIcon
-											color="blue"
-											onClick={() => {
-												setEditCourseIdx(idx);
-												setCourseModal(true);
-											}}>
-											<IconEdit size={18} />
-										</ActionIcon>
-										<ActionIcon
-											color="red"
-											onClick={() =>
-												handleDeleteCourse(idx)
-											}>
-											<IconTrash size={18} />
-										</ActionIcon>
-									</Group>
+						{courses.length === 0 ? (
+							<tr>
+								<td colSpan={5} style={{ textAlign: "center" }}>
+									No courses found
 								</td>
 							</tr>
-						))}
+						) : (
+							courses.map((course, idx) => (
+								<tr key={course._id}>
+									<td>{course.title}</td>
+									<td>{course.subtitle}</td>
+									<td>
+										<Group spacing="xs">
+											{course.modules?.map((mod, mIdx) => (
+												<Badge key={mIdx}>
+													{mod.title}
+												</Badge>
+											))}
+										</Group>
+									</td>
+									<td>
+										<Group spacing={4}>
+											<ActionIcon
+												color="blue"
+												onClick={() => {
+													setEditCourseIdx(idx);
+													setCourseModal(true);
+												}}>
+												<IconEdit size={18} />
+											</ActionIcon>
+											<ActionIcon
+												color="red"
+												onClick={() =>
+													handleDeleteCourse(idx)
+												}>
+												<IconTrash size={18} />
+											</ActionIcon>
+										</Group>
+									</td>
+								</tr>
+							))
+						)}
 					</tbody>
 				</Table>
 			</ScrollArea>
@@ -359,7 +460,7 @@ export default function AdminDashboard() {
 					setEditCourseIdx(null);
 				}}
 				title={editCourseIdx !== null ? "Edit Course" : "Add Course"}
-				fullScreen
+				size="xl"
 				padding="xl">
 				<CourseForm
 					initial={
@@ -374,6 +475,7 @@ export default function AdminDashboard() {
 						setCourseModal(false);
 						setEditCourseIdx(null);
 					}}
+					saving={saving}
 				/>
 			</Modal>
 
@@ -381,23 +483,33 @@ export default function AdminDashboard() {
 
 			{/* Students Section */}
 			<Title order={4} mb="xs">
-				Registered Students
+				Registered Students ({students.length})
 			</Title>
 			<ScrollArea>
 				<Table striped>
 					<thead>
 						<tr>
-							<th>Name</th>
+							<th>Full Name</th>
+							<th>Username</th>
 							<th>Email</th>
 						</tr>
 					</thead>
 					<tbody>
-						{students.map((student, idx) => (
-							<tr key={idx}>
-								<td>{student.name}</td>
-								<td>{student.email}</td>
+						{students.length === 0 ? (
+							<tr>
+								<td colSpan={3} style={{ textAlign: "center" }}>
+									No students found
+								</td>
 							</tr>
-						))}
+						) : (
+							students.map((student) => (
+								<tr key={student._id}>
+									<td>{student.fullname}</td>
+									<td>{student.username}</td>
+									<td>{student.email}</td>
+								</tr>
+							))
+						)}
 					</tbody>
 				</Table>
 			</ScrollArea>
@@ -406,7 +518,7 @@ export default function AdminDashboard() {
 
 			{/* Admins Section */}
 			<Group position="apart" mb="xs" mt="lg">
-				<Title order={4}>Admins</Title>
+				<Title order={4}>Admins ({admins.length})</Title>
 				<Button
 					leftIcon={<IconPlus />}
 					onClick={() => setAdminModal(true)}>
@@ -417,25 +529,33 @@ export default function AdminDashboard() {
 				<Table striped>
 					<thead>
 						<tr>
-							<th>Name</th>
+							<th>Username</th>
 							<th>Email</th>
 							<th>Actions</th>
 						</tr>
 					</thead>
 					<tbody>
-						{admins.map((admin, idx) => (
-							<tr key={idx}>
-								<td>{admin.name}</td>
-								<td>{admin.email}</td>
-								<td>
-									<ActionIcon
-										color="red"
-										onClick={() => handleDeleteAdmin(idx)}>
-										<IconTrash size={18} />
-									</ActionIcon>
+						{admins.length === 0 ? (
+							<tr>
+								<td colSpan={3} style={{ textAlign: "center" }}>
+									No admins found
 								</td>
 							</tr>
-						))}
+						) : (
+							admins.map((admin, idx) => (
+								<tr key={admin._id}>
+									<td>{admin.username}</td>
+									<td>{admin.email}</td>
+									<td>
+										<ActionIcon
+											color="red"
+											onClick={() => handleDeleteAdmin(idx)}>
+											<IconTrash size={18} />
+										</ActionIcon>
+									</td>
+								</tr>
+							))
+						)}
 					</tbody>
 				</Table>
 			</ScrollArea>
@@ -446,6 +566,7 @@ export default function AdminDashboard() {
 				<AdminForm
 					onSubmit={handleAddAdmin}
 					onCancel={() => setAdminModal(false)}
+					saving={saving}
 				/>
 			</Modal>
 		</Container>

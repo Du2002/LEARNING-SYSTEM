@@ -69,8 +69,77 @@ async function Profile(req,res){
         }  
     }
 
+//NEW: Update profile
+async function UpdateProfile(req,res){
+    try {
+        const ID = req.user
+        const {username, fullname, email, password, profilePicture} = req.body
+
+        // Find user
+        const user = await studentModel.findById(ID)
+        if(!user){
+            return res.status(404).json({msg:"User not found"})
+        }
+
+        // Check if username or email already exists (excluding current user)
+        if(username && username !== user.username){
+            const existingUsername = await studentModel.findOne({username: username, _id: {$ne: ID}})
+            if(existingUsername){
+                return res.status(400).json({msg:"Username already taken"})
+            }
+        }
+
+        if(email && email !== user.email){
+            const existingEmail = await studentModel.findOne({email: email, _id: {$ne: ID}})
+            if(existingEmail){
+                return res.status(400).json({msg:"Email already taken"})
+            }
+        }
+
+        // Prepare update data
+        const updateData = {}
+        if(username) updateData.username = username
+        if(fullname) updateData.fullname = fullname
+        if(email) updateData.email = email
+        if(profilePicture !== undefined) updateData.profilePicture = profilePicture
+
+        // Update password if provided
+        if(password && password.trim() !== ""){
+            const hashPassword = await bcrypt.hash(password, 10)
+            updateData.password = hashPassword
+        }
+
+        // Update user
+        const updatedUser = await studentModel.findByIdAndUpdate(
+            ID, 
+            updateData, 
+            {new: true}
+        )
+
+        // Return updated user without password
+        const {password: pwd, ...rest} = updatedUser._doc
+        res.json({msg:"Profile updated successfully", rest})
+
+    } catch (error) {
+        console.error("Update profile error:", error)
+        return res.status(500).json({msg:"Error Occured"})
+    }  
+}
+
+// Get all students (for admin)
+async function GetAllStudents(req, res) {
+    try {
+        const students = await studentModel.find().select('-password')
+        res.json({ students })
+    } catch (error) {
+        return res.status(500).json({ msg: "Error fetching students" })
+    }
+}
+
 module.exports = {
     Login,
     Register,
     Profile,
+    UpdateProfile,
+    GetAllStudents,
 }

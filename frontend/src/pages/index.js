@@ -18,8 +18,10 @@ export default function Home() {
         </Text>
          {/* <Anchor href="/student/login"> */}
         <Button variant="gradient" size="xl" radius="xl" className={classes.control}>
-            
-          <a href= "/student/login">Get started</a> 
+            Get started 
+          {/* <a href= "/student/login">
+         
+          </a>  */}
         </Button>
         {/* </Anchor> */}
       </Container>
