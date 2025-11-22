@@ -25,7 +25,6 @@ export default function Profile() {
 		fullname: "",
 		username: "",
 		email: "",
-		password: "",
 		profilePicture: ""
 	});
 
@@ -36,7 +35,6 @@ export default function Profile() {
 		fullname: "",
 		username: "",
 		email: "",
-		password: "",
 		profilePicture: ""
 	});
 
@@ -108,7 +106,7 @@ export default function Profile() {
 		return (
 			<div 
 				style={{
-					background: "linear-gradient(135deg, #f7e7c8ff 0%, #f4ddc1ff 100%)", 
+					background: "linear-gradient(135deg, #f7e7c8ff  0%, #f4ddc1ff 100%)", 
 					minHeight: "100vh",
 					width: "100vw"
 				}}
@@ -123,7 +121,7 @@ export default function Profile() {
 	return (
 		<div 
 			style={{
-				background: "linear-gradient(135deg, #f7e7c8ff 0%, #f4ddc1ff 100%)", 
+				background: "linear-gradient(135deg, #cbb38b 0%, #e2d9ca 100%)", 
 				minHeight: "100vh",
 				width: "100vw", 
 				padding: "20px"
@@ -185,12 +183,6 @@ export default function Profile() {
 								required
 							/>
 
-							<PasswordInput
-								label="Password"
-								value={editForm.password || ""}
-								onChange={(e) => handleInputChange('password', e.target.value)}
-								placeholder="Leave empty to keep current password"
-							/>
 
 							<Group position="right" mt="md">
 								<Button 
@@ -232,12 +224,6 @@ export default function Profile() {
 								{profileData.email || "Not set"}
 							</Text>
 
-							<Text>
-								<Text span fw={500}>
-									Password:
-								</Text>{" "}
-								{profileData.password ? "••••••••" : "Not set"}
-							</Text>
 						</Group>
 					)}
 				</Card>

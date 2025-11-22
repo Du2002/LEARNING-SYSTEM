@@ -63,7 +63,7 @@ export default function Login() {
         onChange={(e)=>setEmail(e.target.value)} value={email}/>
 
        
-        <PasswordInput label="Password" placeholder="Your password" mt="md" size="md" radius="md" required
+        <PasswordInput label="Password" placeholder="Your password" mt="md" size="md" radius="md" require
         onChange={(e)=>setPassword(e.target.value)} value={password}  />
 
         <Checkbox label="Keep me logged in" mt="xl" size="md" />

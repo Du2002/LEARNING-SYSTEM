@@ -1,59 +1,71 @@
-import React from "react";
-import { Card, Image, Text, Group, SimpleGrid, Button } from "@mantine/core";
+import React, { useState, useEffect } from "react";
+import { Card, Image, Text, Group, SimpleGrid, Button, Loader, Center, Alert } from "@mantine/core";
+import { IconAlertCircle } from "@tabler/icons-react";
 import Link from "next/link";
-// Sample course data
-const courses = [
-	{
-		id: 1,
-		title: "React for Beginners",
-		subtitle: "Learn the basics of React.js",
-		image: "https://placehold.co/400x200?react",
-		courseUrl: "react-for-beginners",
-	},
-	{
-		id: 2,
-		title: "Advanced JavaScript",
-		subtitle: "Deep dive into JS concepts",
-		image: "https://placehold.co/400x200?javascript",
-		courseUrl: "advanced-javascript",
-	},
-	{
-		id: 3,
-		title: "UI/UX Design",
-		subtitle: "Design beautiful interfaces",
-		image: "https://placehold.co/400x200?design",
-		courseUrl: "ui-ux-design",
-	},
-	{
-		id: 4,
-		title: "Python for Data Science",
-		subtitle: "Analyze data with Python",
-		image: "https://placehold.co/400x200?python",
-		courseUrl: "python-for-data-science",
-	},
-	{
-		id: 5,
-		title: "Web Development Bootcamp",
-		subtitle: "Full-stack web development",
-		image: "https://placehold.co/400x200?web",
-		courseUrl: "web-development-bootcamp",
-	},
-	{
-		id: 6,
-		title: "Machine Learning Basics",
-		subtitle: "Introduction to ML concepts",
-		image: "https://placehold.co/400x200?machinelearning",
-		courseUrl: "machine-learning-basics",
-	},
-];
+import { useRouter } from "next/router";
+import { getAllCoursesForStudents } from "../../../util/api/course.api";
+import useAuth from "../../../util/api/context/AuthContext";
 
 export default function CoursesPage() {
+	const [courses, setCourses] = useState([]);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState("");
+	
+	const { user } = useAuth();
+	const router = useRouter();
+
+	useEffect(() => {
+		loadCourses();
+	}, []);
+
+	const loadCourses = async () => {
+		try {
+			setLoading(true);
+			setError("");
+
+			// Get token from context or localStorage
+			const token = user.token || localStorage.getItem("token");
+			
+			if (!token) {
+				router.push("/student/login");
+				return;
+			}
+
+			const res = await getAllCoursesForStudents(token);
+
+			if (res && !res.error) {
+				setCourses(res.courses || []);
+			} else {
+				setError("Failed to load courses");
+			}
+		} catch (error) {
+			console.error("Error loading courses:", error);
+			setError("Error loading courses");
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	if (loading) {
+		return (
+			<Center style={{ minHeight: "400px" }}>
+				<Loader size="lg" />
+			</Center>
+		);
+	}
+
+	if (error) {
+		return (
+			<Center style={{ minHeight: "400px", padding: "20px" }}>
+				<Alert icon={<IconAlertCircle size={16} />} color="red" title="Error">
+					{error}
+				</Alert>
+			</Center>
+		);
+	}
+
 	return (
-		<div 
-		style={
-			{ background: "linear-gradient(135deg, #f7e7c8ff 0%, #f4ddc1ff 100%)", minHeight: "100vh",width: "100vw", padding: "20px" }
-			}>
-		<SimpleGrid
+		<SimpleGrid 
 			cols={3}
 			p={16}
 			spacing="lg"
@@ -61,32 +73,47 @@ export default function CoursesPage() {
 				{ maxWidth: 980, cols: 2, spacing: "md" },
 				{ maxWidth: 755, cols: 1, spacing: "sm" },
 			]}>
-			{courses.map((course) => (
-				<Card
-					key={course.id}
-					shadow="sm"
-					padding="lg"
-					radius="md"
-					withBorder>
-					<Card.Section>
-						<Image
-							src={course.image}
-							height={160}
-							alt={course.title}
-						/>
-					</Card.Section>
-					<Group position="apart" mt="md" mb="xs">
-						<Text weight={500}>{course.title}</Text>
-					</Group>
-					<Text size="sm" c="dimmed">
-						{course.subtitle}
+			{courses.length === 0 ? (
+				<Center style={{ gridColumn: "1 / -1", padding: "40px" }}>
+					<Text size="lg" color="dimmed">
+						No courses available yet.
 					</Text>
-					<Button component={Link} href={"/courses/" + course.courseUrl} variant="light" mt={8} fullWidth>
-						Start Learning
-					</Button>
-				</Card>
-			))}
+				</Center>
+			) : (
+				courses.map((course) => (
+					<Card
+						key={course._id}
+						shadow="sm"
+						padding="lg"
+						radius="md"
+						withBorder>
+						<Card.Section>
+							<Image
+								src={course.thumbnail || "https://placehold.co/400x200?text=" + encodeURIComponent(course.title)}
+								height={160}
+								alt={course.title}
+								
+							/>
+						</Card.Section>
+						<Group position="apart" mt="md" mb="xs">
+							<Text weight={500}>{course.title}</Text>
+						</Group>
+						<Text size="sm" c="dimmed">
+							{course.subtitle}
+						</Text>
+						<Button 
+							component={Link} 
+							href={`/courses/${encodeURIComponent(course.title)}`}  
+							variant="light" 
+							mt={8} 
+							fullWidth
+						>
+							Start Learning
+						</Button>
+					</Card>
+				))
+			)}
 		</SimpleGrid>
-	</div>
+	
 	);
 }

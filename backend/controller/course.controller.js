@@ -10,7 +10,7 @@ async function GetAllCourses(req, res) {
     }
 }
 
-// Get single course
+// Get single course by ID
 async function GetCourse(req, res) {
     try {
         const { id } = req.params
@@ -26,16 +26,33 @@ async function GetCourse(req, res) {
     }
 }
 
+// // Get single course by courseName
+async function GetCourseByName(req, res) {
+    try {
+        const { courseName } = req.params
+        // Decode the URL-encoded title
+        const decodedTitle = decodeURIComponent(courseName)
+        const course = await courseModel.findOne({ title:decodedTitle  })
+        
+        if (!course) {
+            return res.status(404).json({ msg: "Course not found" })
+        }
+        
+        res.json({ course })
+    } catch (error) {
+        return res.status(500).json({ msg: "Error fetching course" })
+    }
+}
+
 // Create new course
 async function CreateCourse(req, res) {
     try {
-        const { title, subtitle, description, courseName, modules } = req.body
+        const { title, subtitle, description , modules } = req.body
         
         const course = await courseModel.create({
             title,
             subtitle,
             description,
-            courseName,
             modules: modules || []
         })
         
@@ -49,11 +66,11 @@ async function CreateCourse(req, res) {
 async function UpdateCourse(req, res) {
     try {
         const { id } = req.params
-        const { title, subtitle, description, courseName, modules } = req.body
+        const { title, subtitle, description, modules } = req.body
         
         const course = await courseModel.findByIdAndUpdate(
             id,
-            { title, subtitle, description, courseName, modules },
+            { title, subtitle, description, modules },
             { new: true }
         )
         
@@ -87,6 +104,7 @@ async function DeleteCourse(req, res) {
 module.exports = {
     GetAllCourses,
     GetCourse,
+    GetCourseByName,
     CreateCourse,
     UpdateCourse,
     DeleteCourse,

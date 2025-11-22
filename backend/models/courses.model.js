@@ -21,6 +21,7 @@ const courseSchema = new Schema({
     title:{type:String,required:true},
     subtitle:{type:String,required:true},
     description:{type:String,required:true},
+ 
     modules:{type:[moduleSchema],required:false}
 },
  {timestamps:true}

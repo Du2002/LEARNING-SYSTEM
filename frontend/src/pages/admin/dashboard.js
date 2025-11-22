@@ -419,6 +419,7 @@ export default function AdminDashboard() {
 								<tr key={course._id}>
 									<td>{course.title}</td>
 									<td>{course.subtitle}</td>
+	
 									<td>
 										<Group spacing="xs">
 											{course.modules?.map((mod, mIdx) => (

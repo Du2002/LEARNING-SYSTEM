@@ -1,8 +1,14 @@
 import { Button, Container, Overlay, Text, Title,Anchor } from '@mantine/core';
 import classes from '../styles/HeroContentLeft.module.css';
+import { useRouter } from "next/router";
 
 
 export default function Home() {
+  const router = useRouter();
+  function submit() {
+    router.push("/student/login");
+  }  
+
   return (
     <div className={classes.hero}>
       <Overlay
@@ -16,14 +22,11 @@ export default function Home() {
           "Unlock your potential with our comprehensive learning platform.
           Access courses,track your progress, and achieve your goals all in one place."</b>
         </Text>
-         {/* <Anchor href="/student/login"> */}
-        <Button variant="gradient" size="xl" radius="xl" className={classes.control}>
-            Get started 
-          {/* <a href= "/student/login">
          
-          </a>  */}
+        <Button variant="gradient" size="xl" radius="xl" className={classes.control} onClick={submit}>
+            Get started 
         </Button>
-        {/* </Anchor> */}
+        
       </Container>
     </div>
   );

@@ -3,6 +3,8 @@ import {Avatar,Burger, Container, Group } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import classes from '@/styles/HeaderSimple.module.css';
 import Link from "next/link";
+import logo from "../assets/logo.png";
+ 
 
 const links = [
   { link: '/student/login', label: 'Login' },
@@ -37,7 +39,7 @@ export default function Navbar() {
 						textDecoration: "none",
 					}}>
 					<img
-						src="https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg"
+						src= {logo}
 						alt="Company Logo"
 						style={{
 							width: 40,

@@ -6,6 +6,7 @@ const cors = require("cors")
 const testRouter = require("./routes/test.routes") 
 const studentRouter = require("./routes/student.routes")
 const adminRouter = require("./routes/admin.routes")
+const courseRouter = require("./routes/course.routes")
 
  
 
@@ -19,7 +20,7 @@ app.use(cors({origin:"*"}))
 app.use("/test",testRouter)
 app.use("/student", studentRouter)
 app.use("/admin", adminRouter)
-
+app.use("/course", courseRouter)
 
 
 app.listen(5000,()=> console.log("server running at port 5000"))
