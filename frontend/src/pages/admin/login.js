@@ -55,7 +55,7 @@ export default function AdminLogin() {
 			<div 
 				className="background" 
 				style={{
-					background: "linear-gradient(135deg, #bedef0ff 0%, #c7cef0ff 100%)", 
+					background: "linear-gradient(135deg, rgba(160, 171, 177, 1) 30%,rgba(89, 142, 170, 1) 70%)", 
 					minHeight: "100vh",
 					width: "100vw", 
 					padding: "20px"

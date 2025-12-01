@@ -106,7 +106,7 @@ export default function Profile() {
 		return (
 			<div 
 				style={{
-					background: "linear-gradient(135deg, #f7e7c8ff  0%, #f4ddc1ff 100%)", 
+					background: "linear-gradient(135deg, rgba(160, 171, 177, 1) 70%,rgba(124, 164, 186, 1)20%)", 
 					minHeight: "100vh",
 					width: "100vw"
 				}}
@@ -115,13 +115,13 @@ export default function Profile() {
 					<Loader size="lg" />
 				</Center>
 			</div>
-		);
+		)
 	}
 
 	return (
 		<div 
 			style={{
-				background: "linear-gradient(135deg, #cbb38b 0%, #e2d9ca 100%)", 
+				background: "linear-gradient(135deg,rgba(160, 171, 177, 1) 70%,rgba(89, 142, 170, 1)20%)", 
 				minHeight: "100vh",
 				width: "100vw", 
 				padding: "20px"

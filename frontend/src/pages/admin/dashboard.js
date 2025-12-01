@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { IconPlus, IconEdit, IconTrash } from "@tabler/icons-react";
+import { IconPlus, IconEdit, IconTrash, IconFileTypePdf, IconUpload } from "@tabler/icons-react";
 import {
 	Container,
 	Title,
@@ -19,6 +19,9 @@ import {
 	Loader,
 	Center,
 	Alert,
+	FileInput,
+	Text,
+	Progress,
 } from "@mantine/core";
 import { IconAlertCircle } from "@tabler/icons-react";
 import {
@@ -31,35 +34,83 @@ import {
 	adminRegister,
 	deleteAdmin,
 } from "../../../util/api/admin.api";
+import { uploadPDF, deletePDF } from "../../../util/api/upload.api";
 import useAuth from "../../../util/api/context/AuthContext";
 import { useRouter } from "next/router";
 
-// Course Form Component
+// Course Form Component with PDF Upload
 function CourseForm({ initial, onSubmit, onCancel, saving }) {
+	const { user } = useAuth();
 	const [title, setTitle] = useState(initial?.title || "");
 	const [subtitle, setSubtitle] = useState(initial?.subtitle || "");
 	const [description, setDescription] = useState(initial?.description || "");
 	const [modules, setModules] = useState(initial?.modules || []);
-
 	const [modTitle, setModTitle] = useState("");
 	const [modDesc, setModDesc] = useState("");
+	const [modPdf, setModPdf] = useState(null);
+	const [uploading, setUploading] = useState(false);
 
-	const addModule = () => {
-		if (modTitle && modDesc) {
-			setModules([...modules, { title: modTitle, description: modDesc }]);
-			setModTitle("");
-			setModDesc("");
+	const addModule = async () => {
+		if (!modTitle || !modDesc) {
+			alert("Please enter module title and description");
+			return;
 		}
+
+		let pdfUrl = "";
+		let downloadUrl = "";
+		let pdfPublicId = "";
+
+		// Upload PDF if selected
+		if (modPdf) {
+			setUploading(true);
+			const token = user.token || localStorage.getItem("token");
+			const uploadRes = await uploadPDF(token, modPdf);
+			setUploading(false);
+
+			console.log("Upload Response:", uploadRes); // Debug
+
+			if (uploadRes && uploadRes.success) {
+				pdfUrl = uploadRes.pdfUrl;
+				downloadUrl = uploadRes.downloadUrl || uploadRes.pdfUrl;
+				pdfPublicId = uploadRes.pdfPublicId;
+			} else {
+				alert("Failed to upload PDF: " + (uploadRes.msg || "Unknown error"));
+				return;
+			}
+		}
+
+		setModules([
+			...modules, 
+			{ 
+				title: modTitle, 
+				description: modDesc,
+				pdfUrl: pdfUrl,
+				downloadUrl: downloadUrl,
+				pdfPublicId: pdfPublicId
+			}
+		]);
+		
+		setModTitle("");
+		setModDesc("");
+		setModPdf(null);
 	};
 
-	const removeModule = (idx) => {
+	const removeModule = async (idx) => {
+		const module = modules[idx];
+		
+		// Delete PDF from Cloudinary if exists
+		if (module.pdfPublicId) {
+			const token = user.token || localStorage.getItem("token");
+			await deletePDF(token, module.pdfPublicId);
+		}
+
 		setModules(modules.filter((_, i) => i !== idx));
 	};
 
 	const handleSubmit = (e) => {
 		e.preventDefault();
 		if (!title || !subtitle || !description) return;
-		onSubmit({ title, subtitle, description,modules });
+		onSubmit({ title, subtitle, description, modules });
 	};
 
 	return (
@@ -84,42 +135,91 @@ function CourseForm({ initial, onSubmit, onCancel, saving }) {
 					minRows={3}
 					required
 				/>
-				<Divider label="Modules" />
-				<Group>
-					<TextInput
-						placeholder="Module Title"
-						value={modTitle}
-						onChange={(e) => setModTitle(e.target.value)}
-					/>
-					<TextInput
-						placeholder="Module Description"
-						value={modDesc}
-						onChange={(e) => setModDesc(e.target.value)}
-					/>
-					<Button onClick={addModule} variant="light">
-						Add Module
-					</Button>
-				</Group>
+				
+				<Divider label="Add Module" />
+				
+				<TextInput
+					label="Module Title"
+					placeholder="Enter module title"
+					value={modTitle}
+					onChange={(e) => setModTitle(e.target.value)}
+				/>
+				<Textarea
+					label="Module Description"
+					placeholder="Enter module description"
+					value={modDesc}
+					onChange={(e) => setModDesc(e.target.value)}
+					minRows={2}
+				/>
+				<FileInput
+					label="Module PDF (Optional)"
+					placeholder="Upload PDF file"
+					accept="application/pdf"
+					icon={<IconFileTypePdf size={14} />}
+					value={modPdf}
+					onChange={setModPdf}
+				/>
+				<Button 
+					onClick={addModule} 
+					variant="light"
+					loading={uploading}
+					leftIcon={<IconPlus size={16} />}
+				>
+					{uploading ? "Uploading PDF..." : "Add Module"}
+				</Button>
+
+				{uploading && <Progress value={100} animate />}
+
+				<Divider label="Modules List" />
+				
 				<Stack spacing="xs">
-					{modules.map((mod, idx) => (
-						<Group key={idx} position="apart">
-							<Box>
-								<b>{mod.title}</b>: {mod.description}
+					{modules.length === 0 ? (
+						<Text size="sm" color="dimmed">No modules added yet</Text>
+					) : (
+						modules.map((mod, idx) => (
+							<Box
+								key={idx}
+								p="sm"
+								style={{
+									border: "1px solid #e0e0e0",
+									borderRadius: 8,
+									background: "#f9f9f9"
+								}}
+							>
+								<Group position="apart">
+									<Box style={{ flex: 1 }}>
+										<Text weight={600}>{mod.title}</Text>
+										<Text size="sm" color="dimmed">{mod.description}</Text>
+										{mod.pdfUrl && (
+											<Badge 
+												leftSection={<IconFileTypePdf size={14} />}
+												color="red"
+												variant="light"
+												mt={4}
+											>
+												PDF Attached
+											</Badge>
+										)}
+									</Box>
+									<ActionIcon
+										color="red"
+										onClick={() => removeModule(idx)}
+										disabled={uploading}
+									>
+										<IconTrash size={18} />
+									</ActionIcon>
+								</Group>
 							</Box>
-							<ActionIcon
-								color="red"
-								onClick={() => removeModule(idx)}>
-								<IconTrash size={16} />
-							</ActionIcon>
-						</Group>
-					))}
+						))
+					)}
 				</Stack>
+
 				<Group position="right" mt="md">
 					<Button variant="default" onClick={onCancel} disabled={saving}>
 						Cancel
 					</Button>
 					<Button type="submit" loading={saving}>
-						{initial ? "Update" : "Add"} Course
+						{initial ? "Update" : "Create"} Course
 					</Button>
 				</Group>
 			</Stack>
@@ -127,7 +227,7 @@ function CourseForm({ initial, onSubmit, onCancel, saving }) {
 	);
 }
 
-// Admin Form Component
+// Admin Form Component (unchanged)
 function AdminForm({ onSubmit, onCancel, saving }) {
 	const [username, setUsername] = useState("");
 	const [email, setEmail] = useState("");
@@ -178,31 +278,24 @@ export default function AdminDashboard() {
 	const router = useRouter();
 	const { user } = useAuth();
 
-	// Loading states
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState("");
 
-	// Data states
 	const [courses, setCourses] = useState([]);
 	const [students, setStudents] = useState([]);
 	const [admins, setAdmins] = useState([]);
 
-	// Modal states
 	const [courseModal, setCourseModal] = useState(false);
 	const [adminModal, setAdminModal] = useState(false);
 	const [editCourseIdx, setEditCourseIdx] = useState(null);
 
-	// Load all data on mount
 	useEffect(() => {
-		// Get token from localStorage if not in context
 		const token = user.token || localStorage.getItem("token");
-		
 		if (!token) {
 			router.push("/admin/login");
 			return;
 		}
-
 		loadAllData(token);
 	}, []);
 
@@ -211,7 +304,6 @@ export default function AdminDashboard() {
 			setLoading(true);
 			setError("");
 
-			// Fetch all data in parallel
 			const [coursesRes, studentsRes, adminsRes] = await Promise.all([
 				getAllCourses(token),
 				getAllStudents(token),
@@ -221,11 +313,9 @@ export default function AdminDashboard() {
 			if (coursesRes && !coursesRes.error) {
 				setCourses(coursesRes.courses || []);
 			}
-
 			if (studentsRes && !studentsRes.error) {
 				setStudents(studentsRes.students || []);
 			}
-
 			if (adminsRes && !adminsRes.error) {
 				setAdmins(adminsRes.admins || []);
 			}
@@ -237,11 +327,8 @@ export default function AdminDashboard() {
 		}
 	};
 
-	const getToken = () => {
-		return user.token || localStorage.getItem("token");
-	};
+	const getToken = () => user.token || localStorage.getItem("token");
 
-	// Course Handlers
 	const handleAddCourse = async (courseData) => {
 		try {
 			setSaving(true);
@@ -271,11 +358,7 @@ export default function AdminDashboard() {
 			const res = await updateCourse(token, courseId, courseData);
 
 			if (res && !res.error) {
-				setCourses(
-					courses.map((c, idx) =>
-						idx === editCourseIdx ? res.course : c
-					)
-				);
+				setCourses(courses.map((c, idx) => idx === editCourseIdx ? res.course : c));
 				setEditCourseIdx(null);
 				setCourseModal(false);
 				alert("Course updated successfully!");
@@ -310,18 +393,12 @@ export default function AdminDashboard() {
 		}
 	};
 
-	// Admin Handlers
 	const handleAddAdmin = async (adminData) => {
 		try {
 			setSaving(true);
-			const res = await adminRegister(
-				adminData.username,
-				adminData.email,
-				adminData.password
-			);
+			const res = await adminRegister(adminData.username, adminData.email, adminData.password);
 
 			if (res && !res.error) {
-				// Reload admins list
 				const token = getToken();
 				const adminsRes = await getAllAdmins(token);
 				if (adminsRes && !adminsRes.error) {
@@ -370,33 +447,21 @@ export default function AdminDashboard() {
 
 	return (
 		<Container size="xl" py="lg">
-			<Title order={2} mb="md">
-				Admin Dashboard
-			</Title>
+			<Title order={2} mb="md">Admin Dashboard</Title>
 
 			{error && (
-				<Alert
-					icon={<IconAlertCircle size={16} />}
-					color="red"
-					mb="md"
-					withCloseButton
-					onClose={() => setError("")}>
+				<Alert icon={<IconAlertCircle size={16} />} color="red" mb="md" withCloseButton onClose={() => setError("")}>
 					{error}
 				</Alert>
 			)}
 
-			{/* Courses Section */}
 			<Group position="apart" mb="xs" mt="lg">
 				<Title order={4}>Courses ({courses.length})</Title>
-				<Button
-					leftIcon={<IconPlus />}
-					onClick={() => {
-						setEditCourseIdx(null);
-						setCourseModal(true);
-					}}>
+				<Button leftIcon={<IconPlus />} onClick={() => { setEditCourseIdx(null); setCourseModal(true); }}>
 					Add Course
 				</Button>
 			</Group>
+			
 			<ScrollArea>
 				<Table striped highlightOnHover>
 					<thead>
@@ -409,21 +474,16 @@ export default function AdminDashboard() {
 					</thead>
 					<tbody>
 						{courses.length === 0 ? (
-							<tr>
-								<td colSpan={5} style={{ textAlign: "center" }}>
-									No courses found
-								</td>
-							</tr>
+							<tr><td colSpan={4} style={{ textAlign: "center" }}>No courses found</td></tr>
 						) : (
 							courses.map((course, idx) => (
 								<tr key={course._id}>
 									<td>{course.title}</td>
 									<td>{course.subtitle}</td>
-	
 									<td>
 										<Group spacing="xs">
 											{course.modules?.map((mod, mIdx) => (
-												<Badge key={mIdx}>
+												<Badge key={mIdx} leftSection={mod.pdfUrl ? <IconFileTypePdf size={12} /> : null}>
 													{mod.title}
 												</Badge>
 											))}
@@ -431,19 +491,10 @@ export default function AdminDashboard() {
 									</td>
 									<td>
 										<Group spacing={4}>
-											<ActionIcon
-												color="blue"
-												onClick={() => {
-													setEditCourseIdx(idx);
-													setCourseModal(true);
-												}}>
+											<ActionIcon color="blue" onClick={() => { setEditCourseIdx(idx); setCourseModal(true); }}>
 												<IconEdit size={18} />
 											</ActionIcon>
-											<ActionIcon
-												color="red"
-												onClick={() =>
-													handleDeleteCourse(idx)
-												}>
+											<ActionIcon color="red" onClick={() => handleDeleteCourse(idx)}>
 												<IconTrash size={18} />
 											</ActionIcon>
 										</Group>
@@ -454,38 +505,14 @@ export default function AdminDashboard() {
 					</tbody>
 				</Table>
 			</ScrollArea>
-			<Modal
-				opened={courseModal}
-				onClose={() => {
-					setCourseModal(false);
-					setEditCourseIdx(null);
-				}}
-				title={editCourseIdx !== null ? "Edit Course" : "Add Course"}
-				size="xl"
-				padding="xl">
-				<CourseForm
-					initial={
-						editCourseIdx !== null ? courses[editCourseIdx] : null
-					}
-					onSubmit={
-						editCourseIdx !== null
-							? handleEditCourse
-							: handleAddCourse
-					}
-					onCancel={() => {
-						setCourseModal(false);
-						setEditCourseIdx(null);
-					}}
-					saving={saving}
-				/>
+
+			<Modal opened={courseModal} onClose={() => { setCourseModal(false); setEditCourseIdx(null); }} title={editCourseIdx !== null ? "Edit Course" : "Add Course"} size="xl" padding="xl">
+				<CourseForm initial={editCourseIdx !== null ? courses[editCourseIdx] : null} onSubmit={editCourseIdx !== null ? handleEditCourse : handleAddCourse} onCancel={() => { setCourseModal(false); setEditCourseIdx(null); }} saving={saving} />
 			</Modal>
 
 			<Divider my="lg" />
 
-			{/* Students Section */}
-			<Title order={4} mb="xs">
-				Registered Students ({students.length})
-			</Title>
+			<Title order={4} mb="xs">Registered Students ({students.length})</Title>
 			<ScrollArea>
 				<Table striped>
 					<thead>
@@ -497,11 +524,7 @@ export default function AdminDashboard() {
 					</thead>
 					<tbody>
 						{students.length === 0 ? (
-							<tr>
-								<td colSpan={3} style={{ textAlign: "center" }}>
-									No students found
-								</td>
-							</tr>
+							<tr><td colSpan={3} style={{ textAlign: "center" }}>No students found</td></tr>
 						) : (
 							students.map((student) => (
 								<tr key={student._id}>
@@ -517,14 +540,9 @@ export default function AdminDashboard() {
 
 			<Divider my="lg" />
 
-			{/* Admins Section */}
 			<Group position="apart" mb="xs" mt="lg">
 				<Title order={4}>Admins ({admins.length})</Title>
-				<Button
-					leftIcon={<IconPlus />}
-					onClick={() => setAdminModal(true)}>
-					Add Admin
-				</Button>
+				<Button leftIcon={<IconPlus />} onClick={() => setAdminModal(true)}>Add Admin</Button>
 			</Group>
 			<ScrollArea>
 				<Table striped>
@@ -537,20 +555,14 @@ export default function AdminDashboard() {
 					</thead>
 					<tbody>
 						{admins.length === 0 ? (
-							<tr>
-								<td colSpan={3} style={{ textAlign: "center" }}>
-									No admins found
-								</td>
-							</tr>
+							<tr><td colSpan={3} style={{ textAlign: "center" }}>No admins found</td></tr>
 						) : (
 							admins.map((admin, idx) => (
 								<tr key={admin._id}>
 									<td>{admin.username}</td>
 									<td>{admin.email}</td>
 									<td>
-										<ActionIcon
-											color="red"
-											onClick={() => handleDeleteAdmin(idx)}>
+										<ActionIcon color="red" onClick={() => handleDeleteAdmin(idx)}>
 											<IconTrash size={18} />
 										</ActionIcon>
 									</td>
@@ -560,15 +572,8 @@ export default function AdminDashboard() {
 					</tbody>
 				</Table>
 			</ScrollArea>
-			<Modal
-				opened={adminModal}
-				onClose={() => setAdminModal(false)}
-				title="Add Admin">
-				<AdminForm
-					onSubmit={handleAddAdmin}
-					onCancel={() => setAdminModal(false)}
-					saving={saving}
-				/>
+			<Modal opened={adminModal} onClose={() => setAdminModal(false)} title="Add Admin">
+				<AdminForm onSubmit={handleAddAdmin} onCancel={() => setAdminModal(false)} saving={saving} />
 			</Modal>
 		</Container>
 	);

@@ -7,9 +7,9 @@ const testRouter = require("./routes/test.routes")
 const studentRouter = require("./routes/student.routes")
 const adminRouter = require("./routes/admin.routes")
 const courseRouter = require("./routes/course.routes")
+const uploadRouter = require("./routes/upload.routes")
 
  
-
 const app = express()
 
 app.use(express.json({ limit: '10mb' }))
@@ -21,6 +21,7 @@ app.use("/test",testRouter)
 app.use("/student", studentRouter)
 app.use("/admin", adminRouter)
 app.use("/course", courseRouter)
+app.use("/upload", uploadRouter)
 
 
 app.listen(5000,()=> console.log("server running at port 5000"))

@@ -11,6 +11,9 @@ import {
 	Loader,
 	Center,
 	Alert,
+	Button,
+	Badge,
+	Modal,
 } from "@mantine/core";
 import {
 	IconBook,
@@ -19,6 +22,10 @@ import {
 	IconPalette,
 	IconDeviceDesktop,
 	IconAlertCircle,
+	IconFileTypePdf,
+	IconDownload,
+	IconEye,
+	IconExternalLink,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { getCourseByName } from "../../../util/api/course.api";
@@ -35,6 +42,8 @@ export default function CoursePage() {
 	const [course, setCourse] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
+	const [pdfModal, setPdfModal] = useState(false);
+	const [selectedPdf, setSelectedPdf] = useState("");
 
 	const router = useRouter();
 	const { coursename } = router.query;
@@ -42,7 +51,6 @@ export default function CoursePage() {
 
 	useEffect(() => {
 		if (coursename) {
-			console.log("coursename from URL:", coursename);
 			loadCourse();
 		}
 	}, [coursename]);
@@ -59,11 +67,10 @@ export default function CoursePage() {
 				return;
 			}
 
-			console.log("Fetching course with name:", coursename);
 			const res = await getCourseByName(token, coursename);
-			console.log("API Response:", res);
 
 			if (res && !res.error && res.course) {
+				console.log("Course loaded:", res.course);
 				setCourse(res.course);
 			} else {
 				setError(res.msg || "Course not found");
@@ -76,11 +83,51 @@ export default function CoursePage() {
 		}
 	};
 
+	const handleViewPDF = (pdfUrl) => {
+		console.log("Viewing PDF:", pdfUrl);
+		if (!pdfUrl) {
+			alert("PDF URL is missing");
+			return;
+		}
+		
+		// Use Google Drive Viewer as fallback for better PDF viewing
+		const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(pdfUrl)}&embedded=true`;
+		
+		setSelectedPdf(googleViewerUrl);
+		setPdfModal(true);
+	};
+
+	const handleOpenInNewTab = (pdfUrl) => {
+		if (!pdfUrl) {
+			alert("PDF URL is missing");
+			return;
+		}
+		window.open(pdfUrl, '_blank');
+	};
+
+	const handleDownloadPDF = (downloadUrl, pdfUrl, moduleName) => {
+		const url = downloadUrl || pdfUrl;
+		console.log("Downloading PDF:", url);
+		
+		if (!url) {
+			alert("PDF URL is missing");
+			return;
+		}
+
+		// Create a temporary anchor element to trigger download
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = `${moduleName}.pdf`;
+		link.target = '_blank';
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	};
+
 	if (loading) {
 		return (
 			<Center style={{ minHeight: "100vh" }}>
 				<Loader size="lg" />
-				<Text ml="md">Loading course...</Text>
 			</Center>
 		);
 	}
@@ -101,11 +148,7 @@ export default function CoursePage() {
 				<Title order={1} mb={8} style={{ fontWeight: 800 }}>
 					{course.title}
 				</Title>
-				<Text
-					size="lg"
-					c="dimmed"
-					mb={12}
-					style={{ fontStyle: "italic" }}>
+				<Text size="lg" c="dimmed" mb={12} style={{ fontStyle: "italic" }}>
 					{course.subtitle}
 				</Text>
 				<Text size="md" mb="lg" style={{ maxWidth: 700 }}>
@@ -134,42 +177,79 @@ export default function CoursePage() {
 							<List.Item
 								key={idx}
 								icon={
-									<ThemeIcon
-										color="indigo"
-										size={36}
-										radius="xl"
-										variant="light">
+									<ThemeIcon color="indigo" size={36} radius="xl" variant="light">
 										{moduleIcons[idx % moduleIcons.length]}
 									</ThemeIcon>
 								}>
-								<Card
-									shadow="sm"
-									radius="md"
-									p="md"
-									withBorder
-									mb="md">
-									<Group align="center" mb={6}>
-										<Title
-											order={3}
-											style={{ fontWeight: 600 }}>
+								<Card shadow="sm" radius="md" p="md" withBorder mb="md">
+									<Group align="center" mb={6} position="apart">
+										<Title order={3} style={{ fontWeight: 600 }}>
 											{module.title}
 										</Title>
+										{module.pdfUrl && (
+											<Badge leftSection={<IconFileTypePdf size={14} />} color="red" variant="filled">
+												PDF Available
+											</Badge>
+										)}
 									</Group>
-									<Text
-										size="sm"
-										c="gray"
-										style={{
-											textAlign: "justify",
-											lineHeight: 1.7,
-										}}>
+									<Text size="sm" c="gray" style={{ textAlign: "justify", lineHeight: 1.7 }} mb="md">
 										{module.description}
 									</Text>
+
+									{/* PDF Buttons */}
+									{module.pdfUrl && (
+										<Group spacing="sm" mt="md">
+											<Button
+												leftIcon={<IconEye size={16} />}
+												variant="light"
+												color="blue"
+												onClick={() => handleViewPDF(module.pdfUrl)}
+											>
+												View PDF
+											</Button>
+											<Button
+												leftIcon={<IconExternalLink size={16} />}
+												variant="light"
+												color="violet"
+												onClick={() => handleOpenInNewTab(module.pdfUrl)}
+											>
+												Open in New Tab
+											</Button>
+											<Button
+												leftIcon={<IconDownload size={16} />}
+												variant="outline"
+												color="green"
+												onClick={() => handleDownloadPDF(module.downloadUrl, module.pdfUrl, module.title)}
+											>
+												Download
+											</Button>
+										</Group>
+									)}
 								</Card>
 							</List.Item>
 						))}
 					</List>
 				)}
 			</Card>
+
+			{/* PDF Viewer Modal with Google Drive Viewer */}
+			<Modal
+				opened={pdfModal}
+				onClose={() => setPdfModal(false)}
+				title="View PDF"
+				size="xl"
+				padding={0}
+			>
+				<iframe
+					src={selectedPdf}
+					style={{
+						width: "100%",
+						height: "80vh",
+						border: "none"
+					}}
+					title="PDF Viewer"
+				/>
+			</Modal>
 		</Container>
 	);
 }

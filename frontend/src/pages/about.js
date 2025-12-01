@@ -76,7 +76,7 @@ export default function About() {
                     margin: 10px 0 0;
                 }
                 .featuresGrid li {
-                    background: linear-gradient(180deg, #fff, #fbfdff);
+                    background: linear-gradient(180deg, #ffffffff, #fbfdff);
                     padding: 12px;
                     border-radius: 8px;
                     box-shadow: 0 6px 18px rgba(16,24,40,0.04);

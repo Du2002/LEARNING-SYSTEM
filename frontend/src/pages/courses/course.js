@@ -48,23 +48,42 @@ export default function CoursesPage() {
 
 	if (loading) {
 		return (
-			<Center style={{ minHeight: "400px" }}>
+			<div style={{ 
+				minHeight: "100vh", 
+				background: "linear-gradient(135deg, rgba(113, 149, 167, 1) 0%, rgba(195, 208, 215, 1) 100%)",
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "center"
+			}}>
+		 
 				<Loader size="lg" />
-			</Center>
+			 </div>
 		);
 	}
 
 	if (error) {
 		return (
-			<Center style={{ minHeight: "400px", padding: "20px" }}>
+			 	<div style={{ 
+				minHeight: "100vh", 
+				background: "linear-gradient(135deg,rgba(113, 149, 167, 1) 0%, rgba(195, 208, 215, 1) 100%)",
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "center",
+				padding: "20px"
+			}}>
 				<Alert icon={<IconAlertCircle size={16} />} color="red" title="Error">
-					{error}
+				{error}
 				</Alert>
-			</Center>
+		 </div>
 		);
 	}
 
 	return (
+			<div style={{ 
+			minHeight: "100vh",
+			background: "linear-gradient(135deg, rgba(113, 149, 167, 1) 0%, rgba(195, 208, 215, 1) 100%)", // Change colors here
+			padding: "20px"
+		}}>
 		<SimpleGrid 
 			cols={3}
 			p={16}
@@ -114,6 +133,7 @@ export default function CoursesPage() {
 				))
 			)}
 		</SimpleGrid>
+		</div>
 	
 	);
 }
