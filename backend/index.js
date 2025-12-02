@@ -15,7 +15,13 @@ const app = express()
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ limit: '10mb', extended: true }))
 
-app.use(cors({origin:"*"}))
+app.use(cors({
+  origin: [
+    'https://lms-frontend-indol-five.vercel.app/',  // Your Vercel URL
+    'http://localhost:3000'              // For local development
+  ],
+  credentials: true
+}))
 
 app.use("/test",testRouter)
 app.use("/student", studentRouter)
