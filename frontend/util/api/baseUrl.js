@@ -1,5 +1,5 @@
-import axios from 'axios';
+import axios from 's';
 
-const BASE_URL = axios.create({baseURL:"http://localhost:5000"})
+const BASE_URL = axios.create({baseURL:"https://learning-system-production-0145.up.railway.app"})
 
 export default BASE_URL
