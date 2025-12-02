@@ -17,7 +17,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }))
 
 app.use(cors({
   origin: [
-    'https://lms-frontend-indol-five.vercel.app/',  // Your Vercel URL
+    'https://lms-frontend-indol-five.vercel.app',  // Your Vercel URL
     'http://localhost:3000'              // For local development
   ],
   credentials: true
