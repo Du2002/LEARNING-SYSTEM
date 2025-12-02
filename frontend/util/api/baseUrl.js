@@ -1,4 +1,4 @@
-import axios from 's';
+import axios from 'axios';
 
 const BASE_URL = axios.create({baseURL:"https://learning-system-production-0145.up.railway.app"})
 
